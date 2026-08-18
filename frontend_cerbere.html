@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CERBÈRE — Détection de Phishing par IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070B14;
+    --bg-panel:#0E1626;
+    --bg-panel-2:#121D33;
+    --line:#1E2A44;
+    --blue:#3E7BFF;
+    --blue-soft:#1B3A66;
+    --blue-glow:rgba(62,123,255,.35);
+    --red:#FF3B4A;
+    --red-soft:#3E141D;
+    --red-glow:rgba(255,59,74,.35);
+    --mix:#9B5CFF;
+    --mix-soft:#2A1B4A;
+    --text:#E9EEF8;
+    --text-mut:#8496B3;
+    --text-dim:#546178;
+    --mono:'JetBrains Mono',monospace;
+    --disp:'Space Grotesk',sans-serif;
+    --body:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1100px 500px at 12% -10%, rgba(62,123,255,.14), transparent 60%),
+      radial-gradient(900px 500px at 92% 8%, rgba(255,59,74,.10), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--body);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  ::selection{background:var(--blue-glow);}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+
+  /* ---------- NAV ---------- */
+  nav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(7,11,20,.82);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .navrow{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:700;font-size:19px;letter-spacing:.02em;}
+  .brand .heads{display:flex;gap:3px;}
+  .brand .heads i{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .brand .heads i:nth-child(1){background:var(--blue);}
+  .brand .heads i:nth-child(2){background:var(--mix);}
+  .brand .heads i:nth-child(3){background:var(--red);}
+  .navlinks{display:flex;gap:30px;font-size:14px;color:var(--text-mut);}
+  .navlinks a{text-decoration:none;transition:color .15s;}
+  .navlinks a:hover{color:var(--text);}
+  .navcta{font-size:13px;font-family:var(--mono);padding:8px 14px;border:1px solid var(--blue-soft);border-radius:7px;color:var(--blue);text-decoration:none;background:rgba(62,123,255,.06);}
+
+  /* ---------- HERO ---------- */
+  .hero{padding:86px 0 60px;position:relative;overflow:hidden;}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--text-mut);text-transform:uppercase;display:flex;align-items:center;gap:10px;margin-bottom:22px;}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 0 3px var(--red-soft);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  .herogrid{display:grid;grid-template-columns:1.1fr .9fr;gap:56px;align-items:center;}
+  h1{
+    font-family:var(--disp);font-weight:700;
+    font-size:clamp(34px,4.4vw,54px);
+    line-height:1.06;letter-spacing:-.01em;margin:0 0 20px;
+  }
+  h1 .g1{color:var(--blue);}
+  h1 .g2{color:var(--red);}
+  .lede{color:var(--text-mut);font-size:16.5px;max-width:52ch;margin:0 0 30px;}
+  .herobtns{display:flex;gap:12px;flex-wrap:wrap;}
+  .btn{
+    font-family:var(--body);font-weight:600;font-size:14.5px;
+    padding:13px 22px;border-radius:9px;border:1px solid transparent;
+    cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+    transition:transform .12s, box-shadow .12s, border-color .12s;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:linear-gradient(135deg,var(--blue),#2657C9);color:#fff;box-shadow:0 8px 26px -8px var(--blue-glow);}
+  .btn-primary:hover{box-shadow:0 10px 30px -6px var(--blue-glow);}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--text-mut);}
+  .btn-ghost:hover{border-color:var(--red-soft);color:var(--text);}
+
+  /* signature: three-headed convergence diagram */
+  .heads-diagram{position:relative;height:340px;display:flex;align-items:center;justify-content:center;}
+  .heads-svg{width:100%;max-width:380px;height:auto;overflow:visible;}
+  .headlabel{font-family:var(--mono);font-size:9.5px;fill:var(--text-mut);letter-spacing:.05em;}
+  .beam{stroke-dasharray:4 5;animation:flow 1.6s linear infinite;}
+  @keyframes flow{to{stroke-dashoffset:-18;}}
+  .core-pulse{animation:corepulse 2.4s ease-in-out infinite;}
+  @keyframes corepulse{0%,100%{r:26;}50%{r:30;}}
+
+  /* ---------- SECTION SHELL ---------- */
+  section{padding:64px 0;}
+  .sec-head{margin-bottom:34px;}
+  .sec-tag{font-family:var(--mono);font-size:11.5px;color:var(--text-mut);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;}
+  .sec-title{font-family:var(--disp);font-size:clamp(24px,2.6vw,32px);font-weight:700;margin:0;letter-spacing:-.01em;}
+  .sec-sub{color:var(--text-mut);font-size:15px;max-width:60ch;margin-top:10px;}
+
+  /* ---------- ANALYZER ---------- */
+  .analyzer{
+    background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
+    border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  }
+  .tabs{display:flex;border-bottom:1px solid var(--line);}
+  .tab{
+    flex:1;text-align:center;padding:17px 10px;font-family:var(--mono);font-size:13px;
+    color:var(--text-mut);cursor:pointer;background:transparent;border:none;border-bottom:2px solid transparent;
+    transition:all .15s;
+  }
+  .tab.active{color:var(--text);border-bottom-color:var(--blue);background:rgba(62,123,255,.05);}
+  .panels{padding:32px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-size:12.5px;color:var(--text-mut);margin-bottom:7px;font-family:var(--mono);}
+  .field input, .field textarea{
+    width:100%;background:#0A1220;border:1px solid var(--line);border-radius:9px;
+    padding:12px 14px;color:var(--text);font-family:var(--body);font-size:14px;
+    resize:vertical;transition:border-color .15s;
+  }
+  .field input:focus, .field textarea:focus{outline:none;border-color:var(--blue);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .modebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 32px;border-bottom:1px solid var(--line);background:rgba(62,123,255,.03);}
+  .modelabel{font-family:var(--mono);font-size:11.5px;color:var(--text-mut);}
+  .modechip{font-family:var(--mono);font-size:11.5px;padding:6px 13px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--text-mut);cursor:pointer;transition:all .15s;}
+  .modechip.active{border-color:var(--blue);color:var(--blue);background:rgba(62,123,255,.08);}
+  .modestatus{font-family:var(--mono);font-size:11px;color:var(--text-dim);}
+  .examples{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px;}
+  .chip{
+    font-family:var(--mono);font-size:11.5px;padding:7px 12px;border-radius:20px;
+    border:1px solid var(--line);color:var(--text-mut);background:transparent;cursor:pointer;transition:all .15s;
+  }
+  .chip:hover{border-color:var(--blue);color:var(--text);}
+  .analyzebar{display:flex;gap:12px;align-items:center;margin-top:6px;}
+
+  /* ---------- RESULTS ---------- */
+  .results{margin-top:34px;border-top:1px dashed var(--line);padding-top:32px;display:none;}
+  .results.show{display:block;}
+  .resgrid{display:grid;grid-template-columns:260px 1fr;gap:32px;}
+  .gaugebox{display:flex;flex-direction:column;align-items:center;}
+  .verdict{
+    font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.03em;
+    padding:7px 16px;border-radius:20px;margin-top:14px;text-transform:uppercase;
+  }
+  .v-safe{background:rgba(62,123,255,.12);color:var(--blue);border:1px solid var(--blue-soft);}
+  .v-suspect{background:rgba(155,92,255,.12);color:var(--mix);border:1px solid var(--mix-soft);}
+  .v-phish{background:rgba(255,59,74,.12);color:var(--red);border:1px solid var(--red-soft);}
+  .scoreval{font-family:var(--mono);font-size:38px;font-weight:700;margin-top:-108px;}
+  .scoresub{font-family:var(--mono);font-size:11px;color:var(--text-mut);margin-top:2px;}
+
+  .heads3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
+  .headcard{background:#0A1220;border:1px solid var(--line);border-radius:12px;padding:16px;}
+  .headcard .hc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .headcard .hc-name{font-family:var(--mono);font-size:11px;color:var(--text-mut);letter-spacing:.04em;}
+  .headcard .hc-score{font-family:var(--mono);font-weight:700;font-size:19px;}
+  .hc-bar{height:5px;border-radius:4px;background:#1B2740;overflow:hidden;}
+  .hc-bar span{display:block;height:100%;border-radius:4px;transition:width .6s ease;}
+
+  .log{background:#080D18;border:1px solid var(--line);border-radius:12px;padding:16px 18px;font-family:var(--mono);font-size:12.5px;max-height:260px;overflow-y:auto;}
+  .logline{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #101A2E;opacity:0;animation:reveal .35s forwards;}
+  .logline:last-child{border-bottom:none;}
+  @keyframes reveal{to{opacity:1;}}
+  .sev{flex-shrink:0;width:64px;font-weight:700;font-size:10.5px;letter-spacing:.04em;}
+  .sev-high{color:var(--red);}
+  .sev-med{color:var(--mix);}
+  .sev-low{color:var(--blue);}
+  .logtxt{color:var(--text-mut);}
+  .logtxt b{color:var(--text);font-weight:500;}
+  .logempty{color:var(--text-dim);font-style:italic;}
+
+  /* ---------- STATS STRIP ---------- */
+  .statsnote{font-family:var(--mono);font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:18px;}
+  .statsgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .statcell{background:var(--bg-panel);padding:26px 22px;}
+  .statnum{font-family:var(--disp);font-size:30px;font-weight:700;}
+  .statlbl{font-size:12.5px;color:var(--text-mut);margin-top:6px;}
+
+  /* ---------- ABOUT / STACK ---------- */
+  .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;}
+  .stacklist{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;}
+  .stacklist li{display:flex;gap:12px;align-items:baseline;font-size:14px;color:var(--text-mut);border-bottom:1px solid var(--line);padding-bottom:10px;}
+  .stacklist b{color:var(--text);font-family:var(--mono);font-size:13px;min-width:150px;display:inline-block;}
+  .notebox{background:var(--bg-panel);border:1px solid var(--blue-soft);border-radius:12px;padding:20px 22px;font-size:13.5px;color:var(--text-mut);}
+  .notebox b{color:var(--blue);}
+
+  footer{border-top:1px solid var(--line);padding:30px 0;text-align:center;color:var(--text-dim);font-size:12.5px;font-family:var(--mono);}
+
+  @media(max-width:860px){
+    .herogrid{grid-template-columns:1fr;}
+    .heads-diagram{height:240px;order:-1;}
+    .resgrid{grid-template-columns:1fr;}
+    .heads3{grid-template-columns:1fr;}
+    .statsgrid{grid-template-columns:1fr 1fr;}
+    .about-grid{grid-template-columns:1fr;}
+    .row2{grid-template-columns:1fr;}
+    .scoreval{margin-top:6px;}
+    .navlinks{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="navrow">
+    <div class="brand"><span class="heads"><i></i><i></i><i></i></span> CERBÈRE</div>
+    <div class="navlinks">
+      <a href="#analyseur">Analyseur</a>
+      <a href="#stats">Tableau de bord</a>
+      <a href="#apropos">Méthodologie</a>
+    </div>
+    <a class="navcta" href="#analyseur">Lancer une analyse ▸</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap herogrid">
+    <div>
+      <div class="eyebrow"><span class="dot"></span> Moteur de détection actif — analyse locale en temps réel</div>
+      <h1>Trois têtes surveillent<br>chaque <span class="g1">e-mail</span>.<br>Aucune <span class="g2">menace</span> ne passe.</h1>
+      <p class="lede">CERBÈRE croise l'analyse linguistique du message, la structure de ses liens et le comportement de son en-tête pour repérer les tentatives de phishing — y compris celles qui ne ressemblent à aucune signature connue.</p>
+      <div class="herobtns">
+        <a href="#analyseur" class="btn btn-primary">Analyser un e-mail ou une URL</a>
+        <a href="#apropos" class="btn btn-ghost">Voir la méthodologie</a>
+      </div>
+    </div>
+    <div class="heads-diagram">
+      <svg class="heads-svg" viewBox="0 0 360 320">
+        <line x1="180" y1="160" x2="80" y2="60" stroke="#3E7BFF" stroke-width="1.5" class="beam" opacity=".6"/>
+        <line x1="180" y1="160" x2="280" y2="60" stroke="#FF3B4A" stroke-width="1.5" class="beam" opacity=".6"/>
+        <line x1="180" y1="160" x2="180" y2="270" stroke="#9B5CFF" stroke-width="1.5" class="beam" opacity=".6"/>
+
+        <circle cx="80" cy="60" r="34" fill="#0E1626" stroke="#3E7BFF" stroke-width="1.5"/>
+        <text x="80" y="65" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#3E7BFF" font-weight="700">NLP</text>
+        <text x="80" y="106" text-anchor="middle" class="headlabel">TEXTE &amp; TON</text>
+
+        <circle cx="280" cy="60" r="34" fill="#0E1626" stroke="#FF3B4A" stroke-width="1.5"/>
+        <text x="280" y="65" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#FF3B4A" font-weight="700">URL</text>
+        <text x="280" y="106" text-anchor="middle" class="headlabel">STRUCTURE</text>
+
+        <circle cx="180" cy="270" r="34" fill="#0E1626" stroke="#9B5CFF" stroke-width="1.5"/>
+        <text x="180" y="275" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#9B5CFF" font-weight="700">HDR</text>
+        <text x="180" y="234" text-anchor="middle" class="headlabel">EN-TÊTES</text>
+
+        <circle cx="180" cy="160" r="26" fill="#070B14" stroke="#E9EEF8" stroke-width="1.2" class="core-pulse"/>
+        <text x="180" y="164" text-anchor="middle" font-family="Space Grotesk" font-size="11" fill="#E9EEF8" font-weight="700">SCORE</text>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<section id="analyseur">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">Module d'analyse</div>
+      <h2 class="sec-title">Soumettez un e-mail ou une URL</h2>
+      <p class="sec-sub">Le moteur combine des heuristiques linguistiques et structurelles inspirées des approches NLP (BERT/LSTM) pour estimer un score de risque. Chargez un exemple pour voir le moteur en action.</p>
+    </div>
+
+    <div class="analyzer">
+      <div class="tabs">
+        <button class="tab active" data-tab="email">✉ Analyser un e-mail</button>
+        <button class="tab" data-tab="url">🔗 Analyser une URL</button>
+      </div>
+
+      <div class="modebar">
+        <span class="modelabel">Mode d'analyse :</span>
+        <button class="modechip active" data-mode="local" onclick="setMode('local')">Local (heuristique)</button>
+        <button class="modechip" data-mode="api" onclick="setMode('api')">API CERBÈRE (ML)</button>
+        <span class="modestatus" id="mode-status"></span>
+      </div>
+
+      <div class="panels">
+
+        <!-- EMAIL PANEL -->
+        <div class="panel active" id="panel-email">
+          <div class="examples">
+            <button class="chip" data-ex="phish1">Charger — Faux e-mail bancaire</button>
+            <button class="chip" data-ex="phish2">Charger — Fausse alerte livraison</button>
+            <button class="chip" data-ex="legit1">Charger — E-mail légitime</button>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label>Nom affiché de l'expéditeur</label>
+              <input type="text" id="em-name" placeholder="Ex : Support Sécurité BIAT">
+            </div>
+            <div class="field">
+              <label>Adresse e-mail de l'expéditeur</label>
+              <input type="text" id="em-from" placeholder="Ex : securite@biat-alerte-compte.tk">
+            </div>
+          </div>
+          <div class="field">
+            <label>Adresse de réponse (Reply-To) — optionnel</label>
+            <input type="text" id="em-reply" placeholder="Laisser vide si identique à l'expéditeur">
+          </div>
+          <div class="field">
+            <label>Objet</label>
+            <input type="text" id="em-subject" placeholder="Ex : Action requise : votre compte sera suspendu">
+          </div>
+          <div class="field">
+            <label>Corps du message (collez le texte et les liens tels quels)</label>
+            <textarea id="em-body" rows="7" placeholder="Collez ici le contenu complet de l'e-mail, y compris les liens visibles..."></textarea>
+          </div>
+          <div class="analyzebar">
+            <button class="btn btn-primary" onclick="runEmailAnalysis()">Lancer l'analyse</button>
+            <button class="btn btn-ghost" onclick="clearEmail()">Effacer</button>
+          </div>
+        </div>
+
+        <!-- URL PANEL -->
+        <div class="panel" id="panel-url">
+          <div class="examples">
+            <button class="chip" data-ex="url1">Charger — Faux portail de paiement</button>
+            <button class="chip" data-ex="url2">Charger — Redirection suspecte</button>
+            <button class="chip" data-ex="url3">Charger — URL légitime</button>
+          </div>
+          <div class="field">
+            <label>URL à analyser</label>
+            <input type="text" id="url-input" placeholder="Ex : https://accounts-secure-verify.paypa1.tk/login">
+          </div>
+          <div class="analyzebar">
+            <button class="btn btn-primary" onclick="runUrlAnalysis()">Lancer l'analyse</button>
+            <button class="btn btn-ghost" onclick="clearUrl()">Effacer</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RESULTS -->
+      <div class="panels" style="padding-top:0;">
+        <div class="results" id="results">
+          <div class="resgrid">
+            <div class="gaugebox">
+              <svg width="220" height="140" viewBox="0 0 220 140">
+                <path d="M20,120 A90,90 0 0,1 200,120" fill="none" stroke="#1B2740" stroke-width="14" stroke-linecap="round"/>
+                <path id="gauge-arc" d="M20,120 A90,90 0 0,1 200,120" fill="none" stroke="#3E7BFF" stroke-width="14" stroke-linecap="round"
+                      stroke-dasharray="251" stroke-dashoffset="251" style="transition:stroke-dashoffset 1s ease, stroke 1s ease;"/>
+              </svg>
+              <div class="scoreval" id="score-val">0</div>
+              <div class="scoresub">SCORE DE RISQUE / 100</div>
+              <div class="verdict v-safe" id="verdict-badge">EN ATTENTE</div>
+            </div>
+            <div>
+              <div class="heads3" id="heads3"></div>
+              <div class="log" id="log-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="stats">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">Tableau de bord</div>
+      <h2 class="sec-title">Aperçu du système</h2>
+      <p class="sec-sub">Chiffres illustratifs représentant le fonctionnement du système en production, à titre de démonstration de l'interface.</p>
+    </div>
+    <div class="statsnote">◈ Données de démonstration — non connectées à un flux en direct</div>
+    <div class="statsgrid">
+      <div class="statcell"><div class="statnum" style="color:var(--blue);">128 940</div><div class="statlbl">E-mails analysés (30 jours)</div></div>
+      <div class="statcell"><div class="statnum" style="color:var(--red);">3 217</div><div class="statlbl">Tentatives de phishing bloquées</div></div>
+      <div class="statcell"><div class="statnum" style="color:var(--mix);">96,4 %</div><div class="statlbl">Précision estimée du modèle</div></div>
+      <div class="statcell"><div class="statnum">184 ms</div><div class="statlbl">Temps moyen d'analyse</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="apropos">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-tag">Méthodologie</div>
+      <h2 class="sec-title">Comment fonctionne CERBÈRE</h2>
+      <p class="sec-sub">Trois axes d'analyse indépendants, combinés en un score unique.</p>
+    </div>
+    <div class="about-grid">
+      <ul class="stacklist">
+        <li><b>Tête NLP</b> Repère le ton pressant, les demandes d'informations sensibles et les formulations typiques de l'ingénierie sociale dans le corps du message.</li>
+        <li><b>Tête URL</b> Décompose la structure des liens : domaine réel, sous-domaines, caractères trompeurs, similarité avec des marques connues.</li>
+        <li><b>Tête En-têtes</b> Compare le nom affiché, l'adresse d'expédition et l'adresse de réponse pour détecter une usurpation.</li>
+        <li><b>Fusion des scores</b> Les trois signaux sont pondérés puis agrégés pour produire le verdict final et la liste des indicateurs détectés.</li>
+      </ul>
+      <div class="notebox">
+        <p style="margin-top:0;"><b>Note technique.</b> Cette interface fait tourner un moteur de règles linguistiques et structurelles directement dans le navigateur, afin de démontrer le pipeline de bout en bout.</p>
+        <p style="margin-bottom:0;">En production, la tête NLP serait remplacée par un modèle Transformer (BERT) ou LSTM entraîné sur des corpus comme <b>PhishTank</b> et <b>Enron Spam</b>, avec extraction de liens via <b>BeautifulSoup</b> côté serveur — le moteur actuel reproduit fidèlement la logique de décision pour la démonstration.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>CERBÈRE — Plateforme de démonstration · Analyse exécutée localement dans votre navigateur</footer>
+
+<script>
+/* ===================== DONNÉES DE RÉFÉRENCE ===================== */
+const URGENCY_WORDS = ["urgent","immédiatement","immediat","dans les 24 heures","24h","derniere chance","dernier avis","compte suspendu","compte bloqué","compte sera fermé","action requise","vérifiez maintenant","confirmez immédiatement","expire aujourd'hui","expire bientôt","cliquez ici","cliquez immédiatement","ne pas ignorer","urgent action required","verify now","account suspended","limited time","act now","click here immediately"];
+const SENSITIVE_WORDS = ["mot de passe","mot de passe actuel","code pin","numéro de carte","cvv","carte bancaire","numéro de sécurité sociale","identifiants","code secret","coordonnées bancaires","rib","iban","otp","code de vérification","password","credit card","social security","ssn"];
+const ATTACHMENT_FLAGS = [".exe",".scr",".zip",".js",".vbs",".jar","pièce jointe protégée par mot de passe","facture jointe","document joint urgent"];
+const KNOWN_BRANDS = ["paypal","apple","microsoft","google","amazon","facebook","instagram","netflix","orange","ooredoo","tunisie telecom","biat","attijari","attijaribank","stb","bnp","la poste","poste tunisienne","dhl","fedex","chronopost","banque de tunisie","ubci","zitouna"];
+const SUSPICIOUS_TLDS = ["tk","ml","ga","cf","gq","xyz","top","club","work","support","gq","icu","monster","rest"];
+const SHORTENERS = ["bit.ly","tinyurl.com","goo.gl","t.co","is.gd","ow.ly","cutt.ly","shorte.st"];
+
+/* ===================== OUTILS ===================== */
+function norm(s){return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");}
+
+function levenshtein(a,b){
+  a=norm(a);b=norm(b);
+  const m=a.length,n=b.length;
+  const d=Array.from({length:m+1},(_,i)=>[i,...Array(n).fill(0)]);
+  for(let j=0;j<=n;j++) d[0][j]=j;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const cost = a[i-1]===b[j-1] ? 0 : 1;
+      d[i][j] = Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+cost);
+    }
+  }
+  return d[m][n];
+}
+
+function extractDomain(urlOrEmail){
+  try{
+    let s = urlOrEmail.trim();
+    if(s.includes("@") && !s.includes("://")) s = s.split("@")[1] || "";
+    if(!s.includes("://")) s = "http://"+s;
+    const u = new URL(s);
+    return u.hostname.toLowerCase();
+  }catch(e){ return ""; }
+}
+
+function extractUrls(text){
+  const re = /(https?:\/\/[^\s)\]"']+|www\.[^\s)\]"']+)/gi;
+  return (text.match(re) || []).map(u => u.startsWith("http") ? u : "https://"+u);
+}
+
+function isIp(host){ return /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host); }
+
+/* ===================== ANALYSE URL (Tête URL) ===================== */
+function analyzeUrlString(rawUrl){
+  const indicators = [];
+  let score = 0;
+  let host = "";
+  try{
+    const u = new URL(rawUrl.includes("://") ? rawUrl : "https://"+rawUrl);
+    host = u.hostname.toLowerCase();
+    const full = rawUrl;
+
+    if(isIp(host)){
+      score += 22; indicators.push({sev:"high", txt:`L'URL pointe vers une <b>adresse IP brute</b> (${host}) plutôt qu'un nom de domaine.`});
+    }
+    if(full.includes("@")){
+      score += 18; indicators.push({sev:"high", txt:"La présence du caractère <b>@</b> peut masquer la vraie destination du lien."});
+    }
+    if(u.hostname.includes("xn--")){
+      score += 20; indicators.push({sev:"high", txt:"Domaine encodé en <b>punycode</b> — signe possible d'une attaque par caractères homoglyphes."});
+    }
+    const sub = host.split(".");
+    if(sub.length > 3){
+      score += 10; indicators.push({sev:"med", txt:`Le domaine comporte <b>${sub.length-2} sous-domaines</b>, une technique fréquente pour imiter un site légitime.`});
+    }
+    const tld = sub[sub.length-1];
+    if(SUSPICIOUS_TLDS.includes(tld)){
+      score += 16; indicators.push({sev:"high", txt:`Extension de domaine à risque : <b>.${tld}</b>, très utilisée dans des campagnes de phishing.`});
+    }
+    if(!full.startsWith("https")){
+      score += 8; indicators.push({sev:"med", txt:"Le lien n'utilise <b>pas HTTPS</b>, aucune connexion chiffrée n'est garantie."});
+    }
+    if(SHORTENERS.some(s => host.includes(s))){
+      score += 12; indicators.push({sev:"med", txt:"Le lien passe par un <b>raccourcisseur d'URL</b>, ce qui masque la destination réelle."});
+    }
+    if((host.match(/-/g)||[]).length >= 2){
+      score += 8; indicators.push({sev:"med", txt:"Le domaine contient <b>plusieurs tirets</b>, souvent utilisés pour imiter une marque (ex. secure-login-verify)."});
+    }
+    if(full.length > 80){
+      score += 6; indicators.push({sev:"low", txt:"URL anormalement <b>longue</b>, pouvant dissimuler des paramètres suspects."});
+    }
+    // typosquatting
+    const domainCore = sub.length>=2 ? sub[sub.length-2] : host;
+    let bestBrand=null, bestDist=99;
+    KNOWN_BRANDS.forEach(b=>{
+      const bCore = b.replace(/\s+/g,"");
+      const dist = levenshtein(domainCore, bCore);
+      if(dist < bestDist){ bestDist = dist; bestBrand = b; }
+    });
+    if(bestBrand && bestDist > 0 && bestDist <= 2 && domainCore.toLowerCase() !== bestBrand.replace(/\s+/g,"")){
+      score += 26; indicators.push({sev:"high", txt:`Le domaine <b>${domainCore}</b> ressemble fortement à la marque <b>${bestBrand}</b> (distance d'édition : ${bestDist}) — typosquatting probable.`});
+    } else if(bestBrand && bestDist===0 && !host.endsWith(bestBrand.replace(/\s+/g,"")+".com") && !host.endsWith(bestBrand.replace(/\s+/g,"")+".tn")){
+      score += 14; indicators.push({sev:"med", txt:`Le nom <b>${bestBrand}</b> apparaît dans un domaine qui n'est ni son .com ni son .tn officiel.`});
+    }
+  }catch(e){
+    score += 5; indicators.push({sev:"low", txt:"Format d'URL invalide ou non standard."});
+  }
+
+  if(indicators.length===0){
+    indicators.push({sev:"low", txt:"Aucun indicateur structurel suspect détecté sur cette URL."});
+  }
+  return {score:Math.min(score,100), indicators, host};
+}
+
+/* ===================== ANALYSE TEXTE (Tête NLP) ===================== */
+function analyzeText(subject, body){
+  const indicators = [];
+  let score = 0;
+  const full = norm((subject||"") + " " + (body||""));
+
+  const urgencyHits = URGENCY_WORDS.filter(w => full.includes(norm(w)));
+  if(urgencyHits.length){
+    score += Math.min(10*urgencyHits.length, 30);
+    indicators.push({sev: urgencyHits.length>=3?"high":"med", txt:`Formulations de <b>pression/urgence</b> détectées (${urgencyHits.length}) : « ${urgencyHits.slice(0,3).join(", ")} »`});
+  }
+  const sensitiveHits = SENSITIVE_WORDS.filter(w => full.includes(norm(w)));
+  if(sensitiveHits.length){
+    score += Math.min(12*sensitiveHits.length, 30);
+    indicators.push({sev:"high", txt:`Demande d'<b>informations sensibles</b> repérée : « ${sensitiveHits.slice(0,3).join(", ")} »`});
+  }
+  const attachHits = ATTACHMENT_FLAGS.filter(w => full.includes(norm(w)));
+  if(attachHits.length){
+    score += 12; indicators.push({sev:"med", txt:"Mention de <b>pièce jointe à risque</b> ou inhabituelle dans le message."});
+  }
+  const exclam = (full.match(/!/g)||[]).length;
+  if(exclam >= 3){
+    score += 6; indicators.push({sev:"low", txt:`Ponctuation excessive (<b>${exclam}</b> points d'exclamation), signe fréquent de manipulation émotionnelle.`});
+  }
+  const capsWords = (body||"").split(/\s+/).filter(w => w.length>3 && w===w.toUpperCase() && /[A-Z]/.test(w));
+  if(capsWords.length >= 3){
+    score += 6; indicators.push({sev:"low", txt:"Usage répété de <b>MOTS EN MAJUSCULES</b> pour attirer l'attention."});
+  }
+  if(!urgencyHits.length && !sensitiveHits.length && !attachHits.length){
+    indicators.push({sev:"low", txt:"Aucun schéma linguistique typique de l'ingénierie sociale détecté dans le texte."});
+  }
+  return {score:Math.min(score,100), indicators};
+}
+
+/* ===================== ANALYSE EN-TÊTES (Tête HDR) ===================== */
+function analyzeHeaders(displayName, fromAddr, replyTo){
+  const indicators = [];
+  let score = 0;
+  const fromDomain = extractDomain(fromAddr||"");
+  const replyDomain = replyTo ? extractDomain(replyTo) : "";
+  const nameNorm = norm(displayName||"");
+
+  let brandInName = KNOWN_BRANDS.find(b => nameNorm.includes(norm(b)));
+  if(brandInName && fromDomain){
+    const brandCore = brandInName.replace(/\s+/g,"");
+    if(!fromDomain.includes(brandCore)){
+      score += 28; indicators.push({sev:"high", txt:`Le nom affiché cite <b>${brandInName}</b> mais l'adresse réelle (<b>${fromDomain}</b>) n'appartient pas à ce domaine.`});
+    }
+  }
+  if(replyTo && replyDomain && fromDomain && replyDomain !== fromDomain){
+    score += 20; indicators.push({sev:"high", txt:`L'adresse de <b>réponse (${replyDomain})</b> diffère du domaine d'expédition (<b>${fromDomain}</b>) — technique classique de détournement de réponse.`});
+  }
+  if(fromDomain && isIp(fromDomain)){
+    score += 15; indicators.push({sev:"high", txt:"L'expéditeur utilise une <b>adresse IP</b> comme nom de domaine."});
+  }
+  if(fromDomain){
+    const sub = fromDomain.split(".");
+    const tld = sub[sub.length-1];
+    if(SUSPICIOUS_TLDS.includes(tld)){
+      score += 14; indicators.push({sev:"med", txt:`Domaine d'expédition avec extension à risque : <b>.${tld}</b>.`});
+    }
+  }
+  if(!fromDomain){
+    indicators.push({sev:"low", txt:"Adresse d'expéditeur non renseignée ou invalide — analyse limitée."});
+  } else if(indicators.length===0){
+    indicators.push({sev:"low", txt:"Aucune incohérence détectée entre le nom affiché, l'expéditeur et l'adresse de réponse."});
+  }
+  return {score:Math.min(score,100), indicators, fromDomain};
+}
+
+/* ===================== ORCHESTRATION ===================== */
+function computeVerdict(score){
+  if(score < 30) return {label:"E-MAIL SÛR", cls:"v-safe", color:"#3E7BFF"};
+  if(score < 65) return {label:"SUSPECT", cls:"v-suspect", color:"#9B5CFF"};
+  return {label:"PHISHING PROBABLE", cls:"v-phish", color:"#FF3B4A"};
+}
+
+function renderResults({nlp, url, hdr, finalScore, urlList}){
+  document.getElementById("results").classList.add("show");
+  document.getElementById("results").scrollIntoView({behavior:"smooth", block:"nearest"});
+
+  const v = computeVerdict(finalScore);
+  const badge = document.getElementById("verdict-badge");
+  badge.textContent = v.label;
+  badge.className = "verdict " + v.cls;
+
+  document.getElementById("score-val").textContent = Math.round(finalScore);
+  document.getElementById("score-val").style.color = v.color;
+
+  const arc = document.getElementById("gauge-arc");
+  const offset = 251 - (251 * Math.min(finalScore,100)/100);
+  requestAnimationFrame(()=>{
+    arc.style.stroke = v.color;
+    arc.style.strokeDashoffset = offset;
+  });
+
+  const heads = [
+    {name:"TÊTE NLP · TEXTE", score:nlp.score, color:"#3E7BFF"},
+    {name:"TÊTE URL · STRUCTURE", score:url.score, color:"#FF3B4A"},
+    {name:"TÊTE HDR · EN-TÊTES", score:hdr.score, color:"#9B5CFF"},
+  ];
+  document.getElementById("heads3").innerHTML = heads.map(h=>`
+    <div class="headcard">
+      <div class="hc-top"><span class="hc-name">${h.name}</span><span class="hc-score" style="color:${h.color}">${Math.round(h.score)}</span></div>
+      <div class="hc-bar"><span style="width:${h.score}%;background:${h.color}"></span></div>
+    </div>
+  `).join("");
+
+  const allIndicators = [
+    ...nlp.indicators.map(i=>({...i, tag:i.tag||"NLP"})),
+    ...url.indicators.map(i=>({...i, tag:i.tag||"URL"})),
+    ...hdr.indicators.map(i=>({...i, tag:i.tag||"HDR"})),
+  ];
+
+  const logEl = document.getElementById("log-list");
+  logEl.innerHTML = "";
+  if(allIndicators.length===0){
+    logEl.innerHTML = `<div class="logempty">Aucun indicateur à afficher.</div>`;
+  } else {
+    allIndicators.forEach((ind, i)=>{
+      const sevLabel = ind.sev==="high" ? "RISQUE ÉLEVÉ" : ind.sev==="med" ? "RISQUE MOYEN" : "INFO";
+      const sevCls = ind.sev==="high" ? "sev-high" : ind.sev==="med" ? "sev-med" : "sev-low";
+      const row = document.createElement("div");
+      row.className = "logline";
+      row.style.animationDelay = (i*70)+"ms";
+      row.innerHTML = `<span class="sev ${sevCls}">[${ind.tag}] ${sevLabel}</span><span class="logtxt">${ind.txt}</span>`;
+      logEl.appendChild(row);
+    });
+  }
+}
+
+/* ===================== MODE LOCAL / API ===================== */
+let ANALYSIS_MODE = "local";
+const API_BASE = "http://localhost:8000";
+
+function setMode(mode){
+  ANALYSIS_MODE = mode;
+  document.querySelectorAll(".modechip").forEach(c=>c.classList.toggle("active", c.dataset.mode===mode));
+  const status = document.getElementById("mode-status");
+  if(mode==="api"){
+    status.textContent = "Vérification de la connexion...";
+    fetch(API_BASE+"/health").then(r=>r.json()).then(d=>{
+      status.textContent = `Connectée · NLP:${d.text_model_loaded?"modèle ML":"heuristique"} · URL:${d.url_model_loaded?"modèle ML":"heuristique"}`;
+    }).catch(()=>{
+      status.textContent = `API injoignable sur ${API_BASE} — lancez "uvicorn src.api:app --port 8000", ou restez en mode local.`;
+    });
+  } else {
+    status.textContent = "";
+  }
+}
+
+function mapApiResponse(data){
+  return { nlp:data.heads.nlp, url:data.heads.url, hdr:data.heads.headers, finalScore:data.final_score };
+}
+
+/* ===================== HANDLERS ===================== */
+async function runEmailAnalysis(){
+  const name = document.getElementById("em-name").value;
+  const from = document.getElementById("em-from").value;
+  const reply = document.getElementById("em-reply").value;
+  const subject = document.getElementById("em-subject").value;
+  const body = document.getElementById("em-body").value;
+
+  if(ANALYSIS_MODE === "api"){
+    try{
+      const res = await fetch(API_BASE+"/analyze/email", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({display_name:name, from_addr:from, reply_to:reply, subject, body})
+      });
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      renderResults(mapApiResponse(await res.json()));
+      return;
+    }catch(e){
+      document.getElementById("mode-status").textContent = `API injoignable (${e.message}) — résultat calculé en local pour cette analyse.`;
+    }
+  }
+
+  const nlp = analyzeText(subject, body);
+  const hdr = analyzeHeaders(name, from, reply);
+
+  const urls = extractUrls(body);
+  let urlAgg = {score:0, indicators:[]};
+  if(urls.length){
+    const analyses = urls.slice(0,3).map(u=>analyzeUrlString(u));
+    urlAgg.score = Math.max(...analyses.map(a=>a.score));
+    analyses.forEach((a,i)=>{
+      a.indicators.forEach(ind => urlAgg.indicators.push({...ind, txt:`(lien ${i+1}) `+ind.txt}));
+    });
+  } else {
+    urlAgg.indicators.push({sev:"low", txt:"Aucun lien détecté dans le corps du message."});
+  }
+
+  const finalScore = nlp.score*0.4 + urlAgg.score*0.35 + hdr.score*0.25;
+  renderResults({nlp, url:urlAgg, hdr, finalScore, urlList:urls});
+}
+
+async function runUrlAnalysis(){
+  const raw = document.getElementById("url-input").value.trim();
+  if(!raw) return;
+
+  if(ANALYSIS_MODE === "api"){
+    try{
+      const res = await fetch(API_BASE+"/analyze/url", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({url:raw})
+      });
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      renderResults(mapApiResponse(await res.json()));
+      return;
+    }catch(e){
+      document.getElementById("mode-status").textContent = `API injoignable (${e.message}) — résultat calculé en local pour cette analyse.`;
+    }
+  }
+
+  const url = analyzeUrlString(raw);
+  const nlp = {score:0, indicators:[{sev:"low", txt:"Mode URL seule — l'analyse linguistique n'est pas applicable."}]};
+  const hdr = {score:0, indicators:[{sev:"low", txt:"Mode URL seule — aucun en-tête à analyser."}]};
+  const finalScore = url.score;
+  renderResults({nlp, url, hdr, finalScore});
+}
+
+function clearEmail(){
+  ["em-name","em-from","em-reply","em-subject","em-body"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("results").classList.remove("show");
+}
+function clearUrl(){
+  document.getElementById("url-input").value="";
+  document.getElementById("results").classList.remove("show");
+}
+
+/* ===================== TABS ===================== */
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById("panel-"+tab.dataset.tab).classList.add("active");
+    document.getElementById("results").classList.remove("show");
+  });
+});
+
+/* ===================== EXEMPLES ===================== */
+const EXAMPLES = {
+  phish1:{
+    name:"Sécurité BIAT", from:"securite@biat-alerte-compte.tk", reply:"support@verif-comptes-online.ru",
+    subject:"Action requise : votre compte sera suspendu sous 24h",
+    body:"Cher client,\n\nNous avons détecté une activité inhabituelle sur votre compte. Pour éviter la suspension immédiate de votre compte, veuillez confirmer votre mot de passe et votre numéro de carte bancaire en cliquant immédiatement sur le lien ci-dessous :\n\nhttps://biat-alerte-compte.tk/verification-urgente\n\nCeci est votre dernier avis. Merci d'agir MAINTENANT !!!"
+  },
+  phish2:{
+    name:"Colis Express", from:"notification@track-colis-livraison.xyz", reply:"",
+    subject:"Votre colis est en attente — action urgente requise",
+    body:"Bonjour,\n\nVotre colis n'a pas pu être livré en raison d'une adresse incomplète. Cliquez ici pour reprogrammer la livraison avant l'expiration du délai de 24h : http://185.23.11.9/colis/confirmation\n\nDes frais de 1,99€ seront appliqués, merci de saisir vos coordonnées bancaires pour valider."
+  },
+  legit1:{
+    name:"Équipe Ooredoo Tunisie", from:"contact@ooredoo.tn", reply:"",
+    subject:"Votre facture du mois d'août est disponible",
+    body:"Bonjour,\n\nVotre facture du mois d'août est désormais disponible dans votre espace client. Vous pouvez la consulter à tout moment en vous connectant sur https://www.ooredoo.tn/espace-client\n\nMerci de votre confiance.\nL'équipe Ooredoo Tunisie"
+  }
+};
+const URL_EXAMPLES = {
+  url1:"https://accounts-secure-verify.paypa1.tk/login",
+  url2:"http://bit.ly/3xVerifyNow",
+  url3:"https://www.attijaribank.com.tn/particuliers"
+};
+
+document.querySelectorAll(".chip").forEach(chip=>{
+  chip.addEventListener("click", ()=>{
+    const key = chip.dataset.ex;
+    if(EXAMPLES[key]){
+      const ex = EXAMPLES[key];
+      document.getElementById("em-name").value = ex.name;
+      document.getElementById("em-from").value = ex.from;
+      document.getElementById("em-reply").value = ex.reply;
+      document.getElementById("em-subject").value = ex.subject;
+      document.getElementById("em-body").value = ex.body;
+    } else if(URL_EXAMPLES[key]){
+      document.getElementById("url-input").value = URL_EXAMPLES[key];
+    }
+  });
+});
+</script>
+</body>
+</html>

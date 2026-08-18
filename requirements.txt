@@ -1,0 +1,11 @@
+fastapi>=0.111
+uvicorn[standard]>=0.30
+pydantic>=2.7
+beautifulsoup4>=4.12
+lxml>=5.2
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.5
+torch>=2.2
+transformers>=4.42
+python-multipart>=0.0.9
